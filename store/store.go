@@ -12,7 +12,8 @@ import (
 type Status string
 
 const (
-	StatusPending Status = "PENDING"
+	StatusPending Status = "PENDING" // 已入队，等待 MAA 接收
+	StatusSent    Status = "SENT"    // MAA 已接收，执行中
 	StatusSuccess Status = "SUCCESS"
 	StatusFailed  Status = "FAILED"
 )
@@ -59,19 +60,42 @@ func (s *Store) Add(taskType, params string) *Task {
 	return t
 }
 
-// Pending 返回所有待执行任务。
-// MAA 自身会按 ID 去重，所以可以重复返回相同任务直到它汇报完成。
+// Pending 返回所有待执行任务（PENDING 和 SENT 都继续返回）。
+// MAA 自身会按 ID 去重，所以重复返回安全。
 func (s *Store) Pending() []*Task {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	var result []*Task
 	for _, t := range s.tasks {
-		if t.Status == StatusPending {
+		if t.Status == StatusPending || t.Status == StatusSent {
 			result = append(result, t)
 		}
 	}
 	return result
+}
+
+// MarkSent 将 PENDING 任务标记为 SENT（MAA 已接收）
+func (s *Store) MarkSent(ids []string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	changed := false
+	for _, t := range s.tasks {
+		if t.Status != StatusPending {
+			continue
+		}
+		for _, id := range ids {
+			if t.ID == id {
+				t.Status = StatusSent
+				changed = true
+				break
+			}
+		}
+	}
+	if changed {
+		s.save()
+	}
 }
 
 // Complete 标记任务完成

@@ -49,17 +49,23 @@ type reportReq struct {
 // GetTask 是 MAA 每秒轮询的获取任务端点
 func (h *Handler) GetTask(c *gin.Context) {
 	var req getTaskReq
-	// 解析失败也返回空列表，避免 MAA 报错
 	_ = c.ShouldBindJSON(&req)
 
 	pending := h.store.Pending()
 	items := make([]taskItem, 0, len(pending))
+	ids := make([]string, 0, len(pending))
 	for _, t := range pending {
 		items = append(items, taskItem{
 			ID:     t.ID,
 			Type:   t.Type,
 			Params: t.Params,
 		})
+		ids = append(ids, t.ID)
+	}
+
+	// PENDING → SENT：MAA 已接收，标记为执行中
+	if len(ids) > 0 {
+		h.store.MarkSent(ids)
 	}
 
 	c.JSON(http.StatusOK, getTaskResp{Tasks: items})
@@ -186,6 +192,7 @@ const dashboardHTML = `<!DOCTYPE html>
   td { padding: 9px 12px; border-bottom: 1px solid #f3f4f6; }
   tr:hover td { background: #f9fafb; }
   .PENDING { color: #92400e; background: #fef3c7; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
+  .SENT    { color: #1e40af; background: #dbeafe; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
   .SUCCESS { color: #065f46; background: #d1fae5; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
   .FAILED  { color: #991b1b; background: #fee2e2; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
   .id { font-family: monospace; font-size: 11px; color: #6b7280; }
@@ -251,6 +258,17 @@ const dashboardHTML = `<!DOCTYPE html>
 </table>
 
 <script>
+const STATUS_NAMES = {
+  'PENDING': '等待中',
+  'SENT':    '执行中',
+  'SUCCESS': '已完成',
+  'FAILED':  '失败',
+};
+
+function statusBadge(s) {
+  return '<span class="' + s + '">' + (STATUS_NAMES[s] || s) + '</span>';
+}
+
 const TYPE_NAMES = {
   'LinkStart':                   '一键长草',
   'LinkStart-Base':              '基建',
@@ -315,7 +333,7 @@ async function load() {
         return '<tr>' +
           '<td>' + new Date(t.created_at).toLocaleString('zh-CN') + '</td>' +
           '<td>' + typeName(t.type) + '</td>' +
-          '<td><span class="' + t.status + '">' + t.status + '</span></td>' +
+          '<td>' + statusBadge(t.status) + '</td>' +
           '<td class="id">' + t.id + '</td>' +
           '<td>' + action + '</td>' +
           '</tr>';
