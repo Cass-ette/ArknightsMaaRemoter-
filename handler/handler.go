@@ -275,6 +275,8 @@ function typeName(type) {
   const zh = TYPE_NAMES[type];
   return zh ? zh + ' <span style="color:#9ca3af;font-size:11px">(' + type + ')</span>' : type;
 }
+
+function onTypeChange() {
   const t = document.getElementById('type').value;
   document.getElementById('params-wrap').style.display =
     t.startsWith('Settings-') ? 'inline' : 'none';
