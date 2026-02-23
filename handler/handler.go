@@ -169,7 +169,8 @@ const dashboardHTML = `<!DOCTYPE html>
 <link rel="icon" href="https://prts.wiki/favicon.ico">
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; background-image: url('https://static.prts.wiki/charinfo/PRTS_6thStyle/bkg7.png'); background-size: cover; background-attachment: fixed; background-position: center; }
+  html { background-image: url('https://static.prts.wiki/charinfo/PRTS_6thStyle/bkg7.png'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100%; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; }
   #top-btn { position: fixed; right: 24px; bottom: 40px; cursor: pointer; opacity: 0.85; transition: opacity 0.2s; }
   #top-btn:hover { opacity: 1; }
   #top-btn img { width: 48px; height: 48px; display: block; }
