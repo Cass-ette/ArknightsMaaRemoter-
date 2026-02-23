@@ -276,10 +276,18 @@ function typeName(type) {
   return zh ? zh + ' <span style="color:#9ca3af;font-size:11px">(' + type + ')</span>' : type;
 }
 
+const PARAMS_HINT = {
+  'Settings-Stage1':             '关卡名，如 1-7、CE-6、S3-7',
+  'Settings-ConnectionAddress':  'ADB 地址，如 127.0.0.1:5555',
+};
+
 function onTypeChange() {
   const t = document.getElementById('type').value;
-  document.getElementById('params-wrap').style.display =
-    t.startsWith('Settings-') ? 'inline' : 'none';
+  const isSettings = t.startsWith('Settings-');
+  document.getElementById('params-wrap').style.display = isSettings ? 'inline' : 'none';
+  if (isSettings) {
+    document.getElementById('params').placeholder = PARAMS_HINT[t] || '参数值';
+  }
 }
 
 function getHeaders() {
