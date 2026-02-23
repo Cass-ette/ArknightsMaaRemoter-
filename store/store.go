@@ -12,8 +12,7 @@ import (
 type Status string
 
 const (
-	StatusPending Status = "PENDING" // 已入队，等待 MAA 接收
-	StatusSent    Status = "SENT"    // MAA 已接收，执行中
+	StatusPending Status = "PENDING"
 	StatusSuccess Status = "SUCCESS"
 	StatusFailed  Status = "FAILED"
 )
@@ -23,7 +22,7 @@ type Task struct {
 	Type      string     `json:"type"`
 	Params    string     `json:"params,omitempty"`
 	Status    Status     `json:"status"`
-	Payload   string     `json:"payload,omitempty"` // 截图存文件路径，其他任务存原始 payload
+	Payload   string     `json:"payload,omitempty"`
 	CreatedAt time.Time  `json:"created_at"`
 	DoneAt    *time.Time `json:"done_at,omitempty"`
 }
@@ -60,7 +59,7 @@ func (s *Store) Add(taskType, params string) *Task {
 	return t
 }
 
-// Pending 返回所有待执行任务（PENDING 和 SENT 都继续返回）。
+// Pending 返回所有待执行任务。
 // MAA 自身会按 ID 去重，所以重复返回安全。
 func (s *Store) Pending() []*Task {
 	s.mu.RLock()
@@ -68,34 +67,11 @@ func (s *Store) Pending() []*Task {
 
 	var result []*Task
 	for _, t := range s.tasks {
-		if t.Status == StatusPending || t.Status == StatusSent {
+		if t.Status == StatusPending {
 			result = append(result, t)
 		}
 	}
 	return result
-}
-
-// MarkSent 将 PENDING 任务标记为 SENT（MAA 已接收）
-func (s *Store) MarkSent(ids []string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	changed := false
-	for _, t := range s.tasks {
-		if t.Status != StatusPending {
-			continue
-		}
-		for _, id := range ids {
-			if t.ID == id {
-				t.Status = StatusSent
-				changed = true
-				break
-			}
-		}
-	}
-	if changed {
-		s.save()
-	}
 }
 
 // Complete 标记任务完成
@@ -139,27 +115,6 @@ func (s *Store) All() []*Task {
 		result[len(s.tasks)-1-i] = t
 	}
 	return result
-}
-
-// FailAllSent 将所有 SENT 任务（除 excludeID 外）标为失败。
-// 在 StopTask 回调成功时调用。
-func (s *Store) FailAllSent(excludeID string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	changed := false
-	now := time.Now()
-	for _, t := range s.tasks {
-		if t.Status == StatusSent && t.ID != excludeID {
-			t.Status = StatusFailed
-			t.Payload = "已被 StopTask 中止"
-			t.DoneAt = &now
-			changed = true
-		}
-	}
-	if changed {
-		s.save()
-	}
 }
 
 func (s *Store) save() {

@@ -53,19 +53,12 @@ func (h *Handler) GetTask(c *gin.Context) {
 
 	pending := h.store.Pending()
 	items := make([]taskItem, 0, len(pending))
-	ids := make([]string, 0, len(pending))
 	for _, t := range pending {
 		items = append(items, taskItem{
 			ID:     t.ID,
 			Type:   t.Type,
 			Params: t.Params,
 		})
-		ids = append(ids, t.ID)
-	}
-
-	// PENDING → SENT：MAA 已接收，标记为执行中
-	if len(ids) > 0 {
-		h.store.MarkSent(ids)
 	}
 
 	c.JSON(http.StatusOK, getTaskResp{Tasks: items})
@@ -79,23 +72,17 @@ func (h *Handler) ReportStatus(c *gin.Context) {
 		return
 	}
 
-	// 先获取任务类型，后面判断是否是 StopTask
-	task := h.store.Get(req.Task)
-
 	payload := req.Payload
-	if req.Payload != "" && req.Status == "SUCCESS" && task != nil && isScreenshotTask(task.Type) {
-		if path, err := saveScreenshot(req.Task, req.Payload); err == nil {
-			payload = path
+	if req.Payload != "" && req.Status == "SUCCESS" {
+		t := h.store.Get(req.Task)
+		if t != nil && isScreenshotTask(t.Type) {
+			if path, err := saveScreenshot(req.Task, req.Payload); err == nil {
+				payload = path
+			}
 		}
 	}
 
 	h.store.Complete(req.Task, req.Status, payload)
-
-	// StopTask 成功时，将其他所有执行中的任务标为失败
-	if task != nil && task.Type == "StopTask" && req.Status == "SUCCESS" {
-		h.store.FailAllSent(req.Task)
-	}
-
 	c.JSON(http.StatusOK, gin.H{})
 }
 
@@ -196,7 +183,6 @@ const dashboardHTML = `<!DOCTYPE html>
   td { padding: 9px 12px; border-bottom: 1px solid #f3f4f6; }
   tr:hover td { background: #f9fafb; }
   .PENDING { color: #92400e; background: #fef3c7; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
-  .SENT    { color: #1e40af; background: #dbeafe; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
   .SUCCESS { color: #065f46; background: #d1fae5; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
   .FAILED  { color: #991b1b; background: #fee2e2; padding: 2px 7px; border-radius: 4px; font-size: 11px; }
   .id { font-family: monospace; font-size: 11px; color: #6b7280; }
@@ -264,7 +250,6 @@ const dashboardHTML = `<!DOCTYPE html>
 <script>
 const STATUS_NAMES = {
   'PENDING': '等待中',
-  'SENT':    '执行中',
   'SUCCESS': '已完成',
   'FAILED':  '失败',
 };
