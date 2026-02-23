@@ -201,31 +201,31 @@ const dashboardHTML = `<!DOCTYPE html>
 <div class="toolbar">
   <select id="type" onchange="onTypeChange()">
     <optgroup label="一键长草">
-      <option>LinkStart</option>
-      <option>LinkStart-Base</option>
-      <option>LinkStart-WakeUp</option>
-      <option>LinkStart-Combat</option>
-      <option>LinkStart-Recruiting</option>
-      <option>LinkStart-Mall</option>
-      <option>LinkStart-Mission</option>
-      <option>LinkStart-AutoRoguelike</option>
-      <option>LinkStart-Reclamation</option>
+      <option value="LinkStart">一键长草 (LinkStart)</option>
+      <option value="LinkStart-Base">基建 (LinkStart-Base)</option>
+      <option value="LinkStart-WakeUp">唤醒登录 (LinkStart-WakeUp)</option>
+      <option value="LinkStart-Combat">刷关卡 (LinkStart-Combat)</option>
+      <option value="LinkStart-Recruiting">公开招募 (LinkStart-Recruiting)</option>
+      <option value="LinkStart-Mall">商店 (LinkStart-Mall)</option>
+      <option value="LinkStart-Mission">日常任务 (LinkStart-Mission)</option>
+      <option value="LinkStart-AutoRoguelike">自动肉鸽 (LinkStart-AutoRoguelike)</option>
+      <option value="LinkStart-Reclamation">生息演算 (LinkStart-Reclamation)</option>
     </optgroup>
     <optgroup label="截图">
-      <option>CaptureImageNow</option>
-      <option>CaptureImage</option>
+      <option value="CaptureImageNow">立刻截图 (CaptureImageNow)</option>
+      <option value="CaptureImage">排队截图 (CaptureImage)</option>
     </optgroup>
     <optgroup label="控制">
-      <option>HeartBeat</option>
-      <option>StopTask</option>
+      <option value="HeartBeat">心跳检测 (HeartBeat)</option>
+      <option value="StopTask">停止当前任务 (StopTask)</option>
     </optgroup>
     <optgroup label="工具箱">
-      <option>Toolbox-GachaOnce</option>
-      <option>Toolbox-GachaTenTimes</option>
+      <option value="Toolbox-GachaOnce">牛牛抽卡单次 (Toolbox-GachaOnce)</option>
+      <option value="Toolbox-GachaTenTimes">牛牛抽卡十连 (Toolbox-GachaTenTimes)</option>
     </optgroup>
     <optgroup label="设置">
-      <option>Settings-ConnectionAddress</option>
-      <option>Settings-Stage1</option>
+      <option value="Settings-ConnectionAddress">修改连接地址 (Settings-ConnectionAddress)</option>
+      <option value="Settings-Stage1">修改关卡 (Settings-Stage1)</option>
     </optgroup>
   </select>
   <span id="params-wrap">
@@ -251,7 +251,30 @@ const dashboardHTML = `<!DOCTYPE html>
 </table>
 
 <script>
-function onTypeChange() {
+const TYPE_NAMES = {
+  'LinkStart':                   '一键长草',
+  'LinkStart-Base':              '基建',
+  'LinkStart-WakeUp':            '唤醒登录',
+  'LinkStart-Combat':            '刷关卡',
+  'LinkStart-Recruiting':        '公开招募',
+  'LinkStart-Mall':              '商店',
+  'LinkStart-Mission':           '日常任务',
+  'LinkStart-AutoRoguelike':     '自动肉鸽',
+  'LinkStart-Reclamation':       '生息演算',
+  'CaptureImageNow':             '立刻截图',
+  'CaptureImage':                '排队截图',
+  'HeartBeat':                   '心跳检测',
+  'StopTask':                    '停止当前任务',
+  'Toolbox-GachaOnce':           '牛牛抽卡单次',
+  'Toolbox-GachaTenTimes':       '牛牛抽卡十连',
+  'Settings-ConnectionAddress':  '修改连接地址',
+  'Settings-Stage1':             '修改关卡',
+};
+
+function typeName(type) {
+  const zh = TYPE_NAMES[type];
+  return zh ? zh + ' <span style="color:#9ca3af;font-size:11px">(' + type + ')</span>' : type;
+}
   const t = document.getElementById('type').value;
   document.getElementById('params-wrap').style.display =
     t.startsWith('Settings-') ? 'inline' : 'none';
@@ -281,7 +304,7 @@ async function load() {
           : '-';
         return '<tr>' +
           '<td>' + new Date(t.created_at).toLocaleString('zh-CN') + '</td>' +
-          '<td>' + t.type + '</td>' +
+          '<td>' + typeName(t.type) + '</td>' +
           '<td><span class="' + t.status + '">' + t.status + '</span></td>' +
           '<td class="id">' + t.id + '</td>' +
           '<td>' + action + '</td>' +
