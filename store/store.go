@@ -141,6 +141,27 @@ func (s *Store) All() []*Task {
 	return result
 }
 
+// FailAllSent 将所有 SENT 任务（除 excludeID 外）标为失败。
+// 在 StopTask 回调成功时调用。
+func (s *Store) FailAllSent(excludeID string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	changed := false
+	now := time.Now()
+	for _, t := range s.tasks {
+		if t.Status == StatusSent && t.ID != excludeID {
+			t.Status = StatusFailed
+			t.Payload = "已被 StopTask 中止"
+			t.DoneAt = &now
+			changed = true
+		}
+	}
+	if changed {
+		s.save()
+	}
+}
+
 func (s *Store) save() {
 	data, _ := json.MarshalIndent(s.tasks, "", "  ")
 	_ = os.WriteFile(s.file, data, 0644)

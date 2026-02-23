@@ -79,19 +79,23 @@ func (h *Handler) ReportStatus(c *gin.Context) {
 		return
 	}
 
-	payload := req.Payload
+	// 先获取任务类型，后面判断是否是 StopTask
+	task := h.store.Get(req.Task)
 
-	// 截图任务：base64 存到文件，避免数据库/JSON 膨胀
-	if req.Payload != "" && req.Status == "SUCCESS" {
-		t := h.store.Get(req.Task)
-		if t != nil && isScreenshotTask(t.Type) {
-			if path, err := saveScreenshot(req.Task, req.Payload); err == nil {
-				payload = path
-			}
+	payload := req.Payload
+	if req.Payload != "" && req.Status == "SUCCESS" && task != nil && isScreenshotTask(task.Type) {
+		if path, err := saveScreenshot(req.Task, req.Payload); err == nil {
+			payload = path
 		}
 	}
 
 	h.store.Complete(req.Task, req.Status, payload)
+
+	// StopTask 成功时，将其他所有执行中的任务标为失败
+	if task != nil && task.Type == "StopTask" && req.Status == "SUCCESS" {
+		h.store.FailAllSent(req.Task)
+	}
+
 	c.JSON(http.StatusOK, gin.H{})
 }
 
