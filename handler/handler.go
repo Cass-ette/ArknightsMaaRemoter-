@@ -194,11 +194,32 @@ const dashboardHTML = `<!DOCTYPE html>
   a { color: #2563eb; }
   #params-wrap { display: none; }
   .hint { font-size: 12px; color: #9ca3af; margin-left: 4px; }
+  .title-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+  .title-links { display: flex; align-items: center; gap: 16px; }
+  .icon-link { display: flex; align-items: center; gap: 6px; color: #374151; text-decoration: none; font-size: 13px; transition: color 0.15s; }
+  .icon-link:hover { color: #111; }
+  .icon-link svg { width: 20px; height: 20px; fill: currentColor; flex-shrink: 0; }
+  .qq-info { display: flex; align-items: center; gap: 6px; color: #374151; font-size: 13px; }
+  .qq-info svg { width: 20px; height: 20px; fill: #12B7F5; flex-shrink: 0; }
 </style>
 </head>
 <body>
-<h1>MAA Remote</h1>
-<p class="sub">控制面板 · 每 2 秒自动刷新</p>
+<div class="title-bar">
+  <div>
+    <h1>MAA Remote</h1>
+    <p class="sub">控制面板 · 每 2 秒自动刷新</p>
+  </div>
+  <div class="title-links">
+    <a href="https://github.com/Cass-ette/ArknightsMaaRemoter-" target="_blank" class="icon-link" title="GitHub 仓库">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      GitHub
+    </a>
+    <span class="qq-info">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.395 15.035a39.548 39.548 0 0 0-.803-2.264c.396-1.108.656-2.476.656-4.148C21.248 3.473 17.824 0 12 0S2.752 3.473 2.752 8.623c0 1.805.302 3.268.757 4.396a32.5 32.5 0 0 0-.802 2.016C1.054 19.456.682 23.394 2.07 23.933c1.048.415 2.698-.68 4.186-2.777.929.299 2.14.63 3.3.832C9.956 23.5 10.96 24 12 24c1.04 0 2.044-.5 2.444-2.012 1.16-.202 2.37-.533 3.3-.832 1.488 2.096 3.138 3.192 4.186 2.777 1.388-.539 1.017-4.477-.535-8.898zm-7.256 4.806c-.437.116-1.216.179-2.139.179s-1.702-.063-2.139-.179c-.265-.07-.376-.172-.399-.229-.095-.233.274-.61.663-.907.406-.31.903-.48 1.416-.48.08 0 .16.01.239.027.16.035.32.053.48.053.16 0 .32-.018.48-.053a1.86 1.86 0 0 1 .239-.027c.513 0 1.01.17 1.416.48.389.297.758.674.663.907-.023.057-.134.159-.399.229z"/></svg>
+      1804534439
+    </span>
+  </div>
+</div>
 
 <div id="top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
   <img src="/static/top.png" alt="top">
