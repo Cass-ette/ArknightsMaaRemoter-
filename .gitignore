@@ -1,0 +1,15 @@
+# 运行时数据
+tasks.json
+screenshots/
+
+# 构建产物
+ArknightsMaaRemoter
+ArknightsMaaRemoter.exe
+/bin/
+
+# Claude Code 本地设置
+.claude/
+
+# 环境变量
+.env
+.env.local
