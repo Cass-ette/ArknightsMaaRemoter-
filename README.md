@@ -4,71 +4,121 @@ MAA 远程控制后端，基于 [MAA 远程控制协议](https://maa.plus)。
 
 实现了协议要求的两个端点，并附带一个 Web 控制面板。MAA 每秒自动轮询，支持截图、一键长草、停止任务等全部标准任务类型。
 
-## 快速开始
+---
+
+## 使用指南
+
+### 第一步：获取程序
+
+**方式一（推荐）：下载启动器**
+
+1. 从 [Releases](https://github.com/Cass-ette/ArknightsMaaRemoter-/releases/latest) 下载以下文件，放到同一个文件夹：
+   - `ArknightsMaaRemoter.exe`
+   - `启动器.bat`
+   - `static/` 文件夹（含背景图等资源）
+
+2. 双击 `启动器.bat` 即可启动，浏览器会自动打开控制面板。
+
+> 如果没有 `ArknightsMaaRemoter.exe`，启动器会自动从 GitHub 下载最新版本。
+
+**方式二：从源码构建（需要已安装 Go 1.21+）**
 
 ```bash
-# 安装依赖
+git clone https://github.com/Cass-ette/ArknightsMaaRemoter-.git
+cd ArknightsMaaRemoter-
 go mod tidy
-
-# 启动服务（默认 :8080）
 go run .
-
-# 打开控制面板
-# http://localhost:8080
 ```
 
-MAA 配置填写：
-- 获取任务端点：`http://localhost:8080/maa/getTask`
-- 汇报任务端点：`http://localhost:8080/maa/reportStatus`
-- 用户标识符：随意填写（单机用途不校验）
+---
 
-## 配置
+### 第二步：配置 MAA
 
-通过环境变量配置：
+打开 MAA → 设置 → 远程控制，填写以下内容：
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `PORT` | `8080` | 监听端口 |
-| `ADMIN_TOKEN` | （空） | 管理端点的 Bearer Token，不设置则无鉴权 |
+| 字段 | 填写值 |
+|------|--------|
+| 获取任务端点 | `http://localhost:8080/maa/getTask` |
+| 汇报任务端点 | `http://localhost:8080/maa/reportStatus` |
+| 用户标识符 | 随意填写（单机模式不校验） |
+| 轮询间隔 | 1000（毫秒，默认值即可） |
 
-示例：
+填写完毕后点击「启动」，MAA 会开始每秒轮询任务队列。
 
-```bash
-PORT=9090 ADMIN_TOKEN=your-secret go run .
+---
+
+### 第三步：使用控制面板
+
+打开浏览器访问 `http://localhost:8080`，即可看到控制面板。
+
+- **下发任务**：点击任务类型按钮，立即加入队列，MAA 下次轮询时会自动取走执行
+- **任务状态**：
+  - `等待中` — 任务已下发，等待 MAA 取走执行
+  - `已完成` — MAA 已完成任务并回调
+  - `失败` — 任务执行失败或被手动中止
+- **截图查看**：执行截图任务后，可在任务列表点击对应条目查看截图
+- **自动刷新**：页面每 2 秒自动刷新，无需手动操作
+
+---
+
+### 管理员 Token（可选）
+
+如果需要保护控制面板（多人局域网环境或暴露公网时），可设置 `ADMIN_TOKEN` 环境变量：
+
+**Windows 命令行启动：**
+```cmd
+set ADMIN_TOKEN=your-secret-token
+ArknightsMaaRemoter.exe
 ```
 
-## 任务类型
+**Windows 环境变量（永久）：**
+系统属性 → 高级 → 环境变量 → 新建 `ADMIN_TOKEN`，值填你的密码。
 
-| 类型 | 说明 |
+设置后，下发任务、查看任务列表、获取截图等管理接口均需在请求头中携带：
+```
+Authorization: Bearer your-secret-token
+```
+控制面板会自动处理，直接在浏览器中使用无需额外操作。
+
+> MAA 的轮询端点（`/maa/getTask`、`/maa/reportStatus`）无需 Token，这是协议规定的。
+
+---
+
+## 任务类型说明
+
+| 任务 | 说明 |
 |------|------|
-| `LinkStart` | 一键长草（全部） |
-| `LinkStart-Base` / `-WakeUp` / `-Combat` / `-Recruiting` / `-Mall` / `-Mission` / `-AutoRoguelike` / `-Reclamation` | 单独执行子功能 |
-| `CaptureImageNow` | 立刻截图（不等队列） |
-| `CaptureImage` | 排队截图 |
-| `HeartBeat` | 心跳，返回当前执行的任务 ID |
-| `StopTask` | 停止当前任务 |
-| `Toolbox-GachaOnce` / `Toolbox-GachaTenTimes` | 牛牛抽卡 |
-| `Settings-ConnectionAddress` / `Settings-Stage1` | 修改 MAA 配置（需 params） |
+| 一键长草（全部） | 执行全部已启用的长草子任务 |
+| 开始唤醒 / 基建换班 / 自动战斗 | 单独执行对应子功能 |
+| 自动公招 / 购物 / 日常任务 | 单独执行对应子功能 |
+| 自动肉鸽 / 生息演算 | 单独执行对应子功能 |
+| 立刻截图 | 插队截图，不等待队列 |
+| 排队截图 | 按顺序截图 |
+| 心跳 | 返回当前 MAA 正在执行的任务 ID |
+| 停止任务 | 中止 MAA 当前正在执行的任务 |
+| 牛牛抽卡（单次/十连） | 工具箱功能 |
 
-## 文件说明
+---
+
+## 文件结构
 
 ```
-main.go            入口，路由注册
-handler/handler.go HTTP 处理器（MAA 协议 + 管理接口 + 控制面板）
-store/store.go     内存任务队列，自动持久化到 tasks.json
-screenshots/       截图文件（自动创建）
-tasks.json         任务历史持久化文件（自动创建）
+ArknightsMaaRemoter.exe   主程序
+启动器.bat                双击启动，自动下载主程序并打开浏览器
+static/
+  bkg7.png               控制面板背景图
+  Top.png                返回顶部按钮图标
+screenshots/             截图文件（运行后自动创建）
+tasks.json               任务历史（运行后自动创建，重启不丢失）
 ```
 
 ---
 
 ## 升级到远程控制
 
-当前是本地自托管模式（MAA 和服务端在同一台机器）。以下方案可以将服务暴露到公网，实现从任意位置控制 MAA，**代码无需修改**。
+当前是本机模式（MAA 和服务端在同一台电脑）。以下方案可将服务暴露到公网，实现从任意位置控制 MAA，**代码无需修改**。
 
 ### 方案一：Cloudflare Tunnel（推荐，免费，无需公网 IP）
-
-适合：有 Cloudflare 账号，不想折腾服务器的情况。
 
 ```bash
 # 1. 安装 cloudflared
@@ -90,15 +140,13 @@ ingress:
 cloudflared tunnel run maa-remote
 ```
 
-MAA 端填写：`https://maa.yourdomain.com/maa/getTask`
+MAA 端改填：`https://maa.yourdomain.com/maa/getTask`
 
-**优点**：免费、有 HTTPS、无需端口映射、支持自定义域名。
+**优点**：免费、自带 HTTPS、无需端口映射、支持自定义域名。
 
 ---
 
 ### 方案二：VPS 部署（完全控制）
-
-适合：已有 VPS，想长期稳定运行。
 
 ```bash
 # 构建 Linux 二进制
@@ -123,18 +171,16 @@ Restart=always
 WantedBy=multi-user.target
 ```
 
-建议在 VPS 上用 Nginx 做反代并配置 HTTPS（Let's Encrypt）：
+建议用 Nginx 做反代并配置 HTTPS（Let's Encrypt）：
 
 ```nginx
 server {
     listen 443 ssl;
     server_name maa.yourdomain.com;
-    # ssl_certificate / ssl_certificate_key 省略...
 
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
-        # 截图任务响应体较大，放宽限制
         client_max_body_size 100m;
     }
 }
@@ -142,9 +188,7 @@ server {
 
 ---
 
-### 方案三：frp 内网穿透（有公网 IP 的朋友帮忙中转）
-
-适合：有一台有公网 IP 的服务器，但不想把业务跑在上面。
+### 方案三：frp 内网穿透
 
 ```toml
 # frpc.toml（本地机器）
@@ -159,7 +203,7 @@ localPort = 8080
 remotePort = 18080
 ```
 
-MAA 端填写：`http://your-server-ip:18080/maa/getTask`
+MAA 端改填：`http://your-server-ip:18080/maa/getTask`
 
 ---
 
@@ -169,3 +213,14 @@ MAA 端填写：`http://your-server-ip:18080/maa/getTask`
 - [ ] 使用 HTTPS（Cloudflare Tunnel 自带；VPS 方案用 Nginx + Let's Encrypt）
 - [ ] MAA 协议端点（`/maa/*`）无需鉴权，这是协议要求，正常现象
 - [ ] 截图体积可达数十 MB，确认反代的 `client_max_body_size` 足够大
+
+---
+
+## 发布新版本
+
+推送带 `v` 前缀的 tag，GitHub Actions 会自动构建并发布 Release：
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
