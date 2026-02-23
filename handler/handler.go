@@ -198,7 +198,7 @@ const dashboardHTML = `<!DOCTYPE html>
 </head>
 <body>
 <h1>MAA Remote</h1>
-<p class="sub">控制面板 · 每 5 秒自动刷新</p>
+<p class="sub">控制面板 · 每 2 秒自动刷新</p>
 
 <div id="top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
   <img src="/static/top.png" alt="top">
@@ -356,7 +356,7 @@ async function submit() {
 }
 
 load();
-setInterval(load, 5000);
+setInterval(load, 2000);
 </script>
 </body>
 </html>
