@@ -169,7 +169,10 @@ const dashboardHTML = `<!DOCTYPE html>
 <link rel="icon" href="https://prts.wiki/favicon.ico">
 <style>
   * { box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; background-image: url('https://static.prts.wiki/charinfo/PRTS_6thStyle/bkg7.png'); background-size: cover; background-attachment: fixed; background-position: center; }
+  #top-btn { position: fixed; right: 24px; bottom: 40px; cursor: pointer; opacity: 0.85; transition: opacity 0.2s; }
+  #top-btn:hover { opacity: 1; }
+  #top-btn img { width: 48px; height: 48px; display: block; }
   h1 { font-size: 22px; margin-bottom: 4px; }
   .sub { color: #888; font-size: 13px; margin-bottom: 24px; }
   .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
@@ -195,6 +198,10 @@ const dashboardHTML = `<!DOCTYPE html>
 <body>
 <h1>MAA Remote</h1>
 <p class="sub">控制面板 · 每 5 秒自动刷新</p>
+
+<div id="top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+  <img src="https://media.prts.wiki/8/87/Top.png" alt="top">
+</div>
 
 <div class="toolbar">
   <select id="type" onchange="onTypeChange()">
