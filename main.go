@@ -32,6 +32,9 @@ func main() {
 		admin.GET("/screenshot/:id", h.GetScreenshot)
 	}
 
+	// 静态文件（背景图等）
+	r.Static("/static", "./static")
+
 	// 控制面板
 	r.GET("/", h.Dashboard)
 

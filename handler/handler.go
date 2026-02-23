@@ -169,7 +169,7 @@ const dashboardHTML = `<!DOCTYPE html>
 <link rel="icon" href="https://prts.wiki/favicon.ico">
 <style>
   * { box-sizing: border-box; }
-  html { background-image: url('https://static.prts.wiki/charinfo/PRTS_6thStyle/bkg7.png'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100%; }
+  html { background-image: url('/static/bkg7.png'); background-size: cover; background-attachment: fixed; background-position: center; min-height: 100%; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 900px; margin: 40px auto; padding: 0 20px; color: #333; }
   #top-btn { position: fixed; right: 24px; bottom: 40px; cursor: pointer; opacity: 0.85; transition: opacity 0.2s; }
   #top-btn:hover { opacity: 1; }
@@ -201,7 +201,7 @@ const dashboardHTML = `<!DOCTYPE html>
 <p class="sub">控制面板 · 每 5 秒自动刷新</p>
 
 <div id="top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-  <img src="https://media.prts.wiki/8/87/Top.png" alt="top">
+  <img src="/static/top.png" alt="top">
 </div>
 
 <div class="toolbar">
