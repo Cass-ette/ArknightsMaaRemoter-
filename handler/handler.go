@@ -226,7 +226,7 @@ const dashboardHTML = `<!DOCTYPE html>
 </div>
 
 <div id="top-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
-  <img src="/static/top.png" alt="top">
+  <img src="/static/Top.png" alt="top">
 </div>
 
 <div class="toolbar">

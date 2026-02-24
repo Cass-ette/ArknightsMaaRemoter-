@@ -1,11 +1,14 @@
 package main
 
 import (
+	"io/fs"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
 	"ArknightsMaaRemoter/handler"
+	staticfiles "ArknightsMaaRemoter/static"
 	"ArknightsMaaRemoter/store"
 )
 
@@ -32,8 +35,9 @@ func main() {
 		admin.GET("/screenshot/:id", h.GetScreenshot)
 	}
 
-	// 静态文件（背景图等）
-	r.Static("/static", "./static")
+	// 静态文件（内嵌于二进制，无需外部 static/ 目录）
+	sub, _ := fs.Sub(staticfiles.FS, ".")
+	r.StaticFS("/static", http.FS(sub))
 
 	// 控制面板
 	r.GET("/", h.Dashboard)
