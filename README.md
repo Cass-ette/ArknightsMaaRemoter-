@@ -16,13 +16,10 @@ MAA 远程控制后端，基于 [MAA 远程控制协议](https://maa.plus)。
 
 **方式一（推荐）：下载启动器**
 
-1. 从 [Releases](https://github.com/Cass-ette/ArknightsMaaRemoter-/releases/latest) 下载以下文件，放到同一个文件夹：
+1. 从 [Releases](https://github.com/Cass-ette/ArknightsMaaRemoter-/releases/latest) 下载以下文件：
    - `ArknightsMaaRemoter.exe`
-   - `启动器.bat`
-   - `static/` 文件夹（含背景图等资源）
-   - 其实你不下也可以啦，最纯净没有插图的丑陋版本直接下载exe文件就可以了喵
-
-2. 双击 `启动器.bat` 即可启动，浏览器会自动打开控制面板。
+     
+2. 如果下载有问题双击 `启动器.bat` 即可启动，浏览器会自动打开控制面板。
 
 > 如果没有 `ArknightsMaaRemoter.exe`，启动器会自动从 GitHub 下载最新版本。
 
