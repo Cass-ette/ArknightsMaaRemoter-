@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,6 +16,9 @@ import (
 
 type Handler struct {
 	store *store.Store
+
+	launchMu   sync.Mutex
+	lastLaunch time.Time // 最近一次拉起 MAA 的时间，用于防止重复拉起
 }
 
 func New(s *store.Store) *Handler {
@@ -133,7 +137,9 @@ func (h *Handler) AdminAuth() gin.HandlerFunc {
 	}
 }
 
-// SubmitTask 向队列添加一个任务
+// SubmitTask 向队列添加一个任务。
+// 若 MAA 离线且已配置 MAA_EXE，会在后台拉起 MAA（不阻塞响应）；
+// 任务保持 PENDING 状态，MAA 上线轮询后自动取走执行。
 func (h *Handler) SubmitTask(c *gin.Context) {
 	var req submitTaskReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -141,7 +147,41 @@ func (h *Handler) SubmitTask(c *gin.Context) {
 		return
 	}
 	t := h.store.Add(req.Type, req.Params)
+	go h.launchMAAIfOffline()
 	c.JSON(http.StatusOK, t)
+}
+
+// launchMAAIfOffline 在 MAA 离线时尝试拉起 MAA。
+// 通过 lastLaunch 时间戳去重，MAA 启动等待窗口期内不会重复拉起。
+func (h *Handler) launchMAAIfOffline() {
+	if h.maaOnline() {
+		return
+	}
+
+	h.launchMu.Lock()
+	if time.Since(h.lastLaunch) < maaStartTimeout {
+		// 等待窗口期内，可能已在启动中，跳过
+		h.launchMu.Unlock()
+		return
+	}
+	h.lastLaunch = time.Now()
+	h.launchMu.Unlock()
+
+	exe := os.Getenv("MAA_EXE")
+	if exe == "" {
+		return
+	}
+	if _, err := os.Stat(exe); err != nil {
+		fmt.Printf("[MAA] 离线且 MAA_EXE 路径无效，无法自动拉起: %v\n", err)
+		return
+	}
+	cmd := exec.Command(exe)
+	cmd.Dir = filepath.Dir(exe)
+	if err := cmd.Start(); err != nil {
+		fmt.Printf("[MAA] 自动拉起失败: %v\n", err)
+		return
+	}
+	fmt.Printf("[MAA] 已拉起: %s\n", exe)
 }
 
 // maaOnlineThreshold MAA 最近一次轮询在此时间内视为在线
@@ -187,16 +227,25 @@ func (h *Handler) StartMAA(c *gin.Context) {
 		return
 	}
 
-	dir := filepath.Dir(exe)
-	cmd := exec.Command(exe)
-	cmd.Dir = dir
-	if err := cmd.Start(); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"online": false,
-			"error":  fmt.Sprintf("启动 MAA 失败: %v", err),
-			"path":   exe,
-		})
-		return
+	// 尝试拉起（含防重复窗口），失败则报错
+	h.launchMu.Lock()
+	alreadyLaunching := time.Since(h.lastLaunch) < maaStartTimeout
+	if !alreadyLaunching {
+		h.lastLaunch = time.Now()
+	}
+	h.launchMu.Unlock()
+	if !alreadyLaunching {
+		cmd := exec.Command(exe)
+		cmd.Dir = filepath.Dir(exe)
+		if err := cmd.Start(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"online": false,
+				"error":  fmt.Sprintf("启动 MAA 失败: %v", err),
+				"path":   exe,
+			})
+			return
+		}
+		fmt.Printf("[MAA] 已拉起: %s\n", exe)
 	}
 
 	// 等待 MAA 进程开始轮询 /maa/getTask（即 LastSeen 被刷新）
@@ -358,6 +407,8 @@ const dashboardHTML = `<!DOCTYPE html>
   <button onclick="submit()">下发任务</button>
   <input id="token" type="password" placeholder="Admin Token（可选）" />
   <button class="secondary" onclick="load()">刷新</button>
+  <button class="secondary" id="maa-start-btn" onclick="startMAA()">启动 MAA</button>
+  <span class="hint" id="maa-badge">检测中…</span>
   <span class="hint" id="status"></span>
 </div>
 
@@ -473,8 +524,52 @@ async function submit() {
   load();
 }
 
+async function checkMAA() {
+  const badge = document.getElementById('maa-badge');
+  const btn = document.getElementById('maa-start-btn');
+  try {
+    const r = await fetch('/admin/maa/status', { headers: getHeaders() });
+    if (r.status === 401) { badge.textContent = 'Token 错误'; badge.style.color = '#991b1b'; return; }
+    const d = await r.json();
+    if (d.online) {
+      badge.textContent = 'MAA 在线';
+      badge.style.color = '#065f46';
+      btn.style.display = 'none';
+    } else {
+      badge.textContent = 'MAA 离线';
+      badge.style.color = '#92400e';
+      btn.style.display = '';
+    }
+  } catch(e) { /* 静默失败，下次刷新重试 */ }
+}
+
+async function startMAA() {
+  const badge = document.getElementById('maa-badge');
+  const btn = document.getElementById('maa-start-btn');
+  btn.disabled = true;
+  btn.textContent = '启动中…';
+  badge.textContent = '正在拉起 MAA，最长等待 60 秒…';
+  badge.style.color = '#92400e';
+  try {
+    const r = await fetch('/admin/maa/start', { method: 'POST', headers: getHeaders() });
+    if (r.status === 401) { alert('Token 错误'); return; }
+    const d = await r.json();
+    badge.textContent = d.message || d.error || '';
+    badge.style.color = d.online ? '#065f46' : '#991b1b';
+  } catch(e) {
+    badge.textContent = '请求失败';
+    badge.style.color = '#991b1b';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '启动 MAA';
+    checkMAA();
+  }
+}
+
 load();
+checkMAA();
 setInterval(load, 2000);
+setInterval(checkMAA, 5000);
 </script>
 </body>
 </html>
