@@ -1,6 +1,10 @@
 @echo off
 cd /d "%~dp0"
 
+REM MAA 程序路径：MAA 未运行时 Remoter 会通过 /admin/maa/start 自动拉起它
+REM 如需修改请编辑下面这一行
+set MAA_EXE=C:\Users\ASUS\Downloads\MAA-v6.3.2-win-x64\MAA.exe
+
 if not exist ArknightsMaaRemoter.exe (
     echo 未找到可执行文件，正在从 GitHub 下载最新版本...
     powershell -Command "Invoke-WebRequest -Uri 'https://github.com/Cass-ette/ArknightsMaaRemoter-/releases/latest/download/ArknightsMaaRemoter.exe' -OutFile 'ArknightsMaaRemoter.exe'"

@@ -86,6 +86,29 @@ Authorization: Bearer your-secret-token
 
 ---
 
+### MAA 自动启动（可选）
+
+当 MAA 未运行时，可在控制面板点击「启动 MAA」按钮（或调用 `POST /admin/maa/start`）自动拉起 MAA 程序。实现原理：服务端记录 MAA 每次轮询的时间戳（`LastSeen`），15 秒内无轮询即视为离线；触发启动时通过 `MAA_EXE` 环境变量启动对应可执行文件，并等待其开始轮询（最长 60 秒）。
+
+**配置方式：**
+
+编辑 `启动器.bat` 中的 `MAA_EXE` 一行，改为你的 MAA.exe 完整路径，或在启动前设置环境变量：
+
+```cmd
+set MAA_EXE=C:\path\to\your\MAA.exe
+ArknightsMaaRemoter.exe
+```
+
+> 注意：MAA 启动后仍需在其「设置 → 远程控制」中配置获取/汇报任务端点指向本服务（默认 `http://localhost:8080/maa/getTask`），否则即使进程启动也不会开始轮询。
+
+| 环境变量 | 默认值 | 说明 |
+|---------|--------|------|
+| `PORT` | `8080` | 控制面板与 MAA 协议端点监听端口 |
+| `ADMIN_TOKEN` | （空） | 管理接口 Bearer Token，留空则不鉴权 |
+| `MAA_EXE` | （空） | MAA.exe 完整路径，用于自动启动 MAA |
+
+---
+
 ## 任务类型说明
 
 | 任务 | 说明 |

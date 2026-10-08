@@ -33,6 +33,8 @@ func main() {
 		admin.POST("/task", h.SubmitTask)
 		admin.GET("/tasks", h.ListTasks)
 		admin.GET("/screenshot/:id", h.GetScreenshot)
+		admin.GET("/maa/status", h.MAAStatus)
+		admin.POST("/maa/start", h.StartMAA)
 	}
 
 	// 静态文件（内嵌于二进制，无需外部 static/ 目录）

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -51,6 +53,8 @@ func (h *Handler) GetTask(c *gin.Context) {
 	var req getTaskReq
 	_ = c.ShouldBindJSON(&req)
 
+	h.store.TouchLastSeen()
+
 	pending := h.store.Pending()
 	items := make([]taskItem, 0, len(pending))
 	for _, t := range pending {
@@ -71,6 +75,8 @@ func (h *Handler) ReportStatus(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{})
 		return
 	}
+
+	h.store.TouchLastSeen()
 
 	payload := req.Payload
 	if req.Payload != "" && req.Status == "SUCCESS" {
@@ -136,6 +142,93 @@ func (h *Handler) SubmitTask(c *gin.Context) {
 	}
 	t := h.store.Add(req.Type, req.Params)
 	c.JSON(http.StatusOK, t)
+}
+
+// maaOnlineThreshold MAA 最近一次轮询在此时间内视为在线
+const maaOnlineThreshold = 15 * time.Second
+
+// maaStartTimeout 启动 MAA 后等待其开始轮询的最长时间
+const maaStartTimeout = 60 * time.Second
+
+// maaOnline 判断 MAA 是否在线（最近是否轮询过）
+func (h *Handler) maaOnline() bool {
+	last := h.store.LastSeen()
+	return !last.IsZero() && time.Since(last) < maaOnlineThreshold
+}
+
+// StartMAA 启动 MAA 客户端。
+// 若 MAA 已在线（最近 15s 内有轮询），直接返回；
+// 否则通过 MAA_EXE 环境变量启动 MAA，并等待其开始轮询。
+func (h *Handler) StartMAA(c *gin.Context) {
+	if h.maaOnline() {
+		c.JSON(http.StatusOK, gin.H{
+			"online":  true,
+			"message": "MAA 已在线",
+			"last_seen": h.store.LastSeen(),
+		})
+		return
+	}
+
+	exe := os.Getenv("MAA_EXE")
+	if exe == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"online":  false,
+			"error":   "未配置 MAA_EXE 环境变量",
+			"hint":    "请设置 MAA_EXE 指向 MAA.exe 的完整路径",
+		})
+		return
+	}
+	if _, err := os.Stat(exe); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"online": false,
+			"error":  fmt.Sprintf("MAA_EXE 路径无效: %v", err),
+			"path":   exe,
+		})
+		return
+	}
+
+	dir := filepath.Dir(exe)
+	cmd := exec.Command(exe)
+	cmd.Dir = dir
+	if err := cmd.Start(); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"online": false,
+			"error":  fmt.Sprintf("启动 MAA 失败: %v", err),
+			"path":   exe,
+		})
+		return
+	}
+
+	// 等待 MAA 进程开始轮询 /maa/getTask（即 LastSeen 被刷新）
+	deadline := time.Now().Add(maaStartTimeout)
+	for time.Now().Before(deadline) {
+		if h.maaOnline() {
+			c.JSON(http.StatusOK, gin.H{
+				"online":  true,
+				"message": "MAA 已启动并在线",
+				"last_seen": h.store.LastSeen(),
+				"path":    exe,
+			})
+			return
+		}
+		time.Sleep(time.Second)
+	}
+
+	c.JSON(http.StatusGatewayTimeout, gin.H{
+		"online":  false,
+		"error":   "MAA 已启动但未在规定时间内开始轮询",
+		"hint":    "请确认 MAA 已配置远程控制端点指向本服务",
+		"path":    exe,
+	})
+}
+
+// MAAStatus 返回 MAA 客户端当前在线状态（供控制面板展示）
+func (h *Handler) MAAStatus(c *gin.Context) {
+	last := h.store.LastSeen()
+	c.JSON(http.StatusOK, gin.H{
+		"online":    h.maaOnline(),
+		"last_seen": last,
+	})
 }
 
 // ListTasks 返回所有任务列表（最新在前）

@@ -28,9 +28,10 @@ type Task struct {
 }
 
 type Store struct {
-	mu    sync.RWMutex
-	tasks []*Task
-	file  string
+	mu       sync.RWMutex
+	tasks    []*Task
+	file     string
+	lastSeen time.Time
 }
 
 func New() *Store {
@@ -115,6 +116,22 @@ func (s *Store) All() []*Task {
 		result[len(s.tasks)-1-i] = t
 	}
 	return result
+}
+
+// TouchLastSeen 更新 MAA 最近一次轮询时间。
+// MAA 客户端按协议每秒轮询 /maa/getTask，因此该时间用于判断 MAA 是否在线。
+func (s *Store) TouchLastSeen() {
+	s.mu.Lock()
+	s.lastSeen = time.Now()
+	s.mu.Unlock()
+}
+
+// LastSeen 返回 MAA 最近一次轮询时间；
+// 若从未轮询过返回零值。
+func (s *Store) LastSeen() time.Time {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return s.lastSeen
 }
 
 func (s *Store) save() {
